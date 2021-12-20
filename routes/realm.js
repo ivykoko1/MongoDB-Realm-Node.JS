@@ -3,6 +3,7 @@ var router = express.Router();
 
 /*MongoDB Realm Initialization*/
 const Realm = require("realm");
+const BSON = require("bson");
 const realmApp = new Realm.App({ id: "myfirstapp-dctbd" });
 
 /*Database object schema*/
@@ -17,6 +18,18 @@ const TaskSchema = {
   primaryKey: '_id',
 };
 
+const DogSchema = {
+  name: 'Dog',
+  properties: {
+    _id: 'objectId',
+    _partition: 'string',
+    age: 'int?',
+    breed: 'string?',
+    myPartition: 'string?',
+    name: 'string',
+  },
+  primaryKey: '_id',
+};
 
 async function quickStart() {
   const realm = await Realm.open({
@@ -99,26 +112,53 @@ async function quickStart() {
 }
 
 
+async function run(){
+  await logToRealm();
+  var realm = await Realm.open({
+    schema: [DogSchema],
+    sync: {
+      user: realmApp.currentUser,
+      partitionValue: 'myPartition',
+    },
+  })
+
+  //writeDog(realm, "Toby", 13, "Border Collie");
+  realm.write(() => {
+    const newDog = realm.create("Dog", {
+      _id: new BSON.ObjectID(),
+      _partition: "myPartition",
+      name: "toby",
+      age: 11,
+      breed: "test"
+    });
+  });
+  console.log("done");
+}
+
+async function writeDog(realm, name, age, breed){
+  realm.write(() => {
+    const newDog = realm.create("Dog", {
+      _id: new BSON.ObjectID(),
+      _partition: "myPartition",
+      name: name,
+      age: age,
+      breed: breed
+    });
+  });
+  console.log("dog " + newDog + " written")
+}
+
 async function logToRealm(){
   const credentials = Realm.Credentials.anonymous();
   const user = await realmApp.logIn(credentials);
   console.log(`Logged in with the user id: ${user.id}`);
-  //Open the Realm with the desired schema
-  const realm = await Realm.open({
-    schema: [TaskSchema],
-    sync: {
-      user: realmApp.currentUser,
-      partitionValue: "myPartition",
-    },
-  });
-  console.log(realm);
 }
 
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
-  quickStart().catch((error) => {
-    console.log(`An error occurred: ${error}`);
+  run().catch(err => {
+    console.error("Failed to open realm:", err)
   });
 });
 
