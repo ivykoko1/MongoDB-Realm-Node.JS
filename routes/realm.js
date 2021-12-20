@@ -123,16 +123,10 @@ async function run(){
   })
 
   //writeDog(realm, "Toby", 13, "Border Collie");
-  realm.write(() => {
-    const newDog = realm.create("Dog", {
-      _id: new BSON.ObjectID(),
-      _partition: "myPartition",
-      name: "toby",
-      age: 11,
-      breed: "test"
-    });
-  });
-  console.log("done");
+  const dogs = realm.objects("Dog");
+
+
+  console.log(dogs);
 }
 
 async function writeDog(realm, name, age, breed){
